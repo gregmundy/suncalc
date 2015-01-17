@@ -3,7 +3,7 @@
 SunCalc is a tiny BSD-licensed Ruby library for calculating sun position, 
 sunlight phases (times for sunrise, sunset, dusk, etc.), moon position and
 lunar phase for the given location and time. This library is a port of 
-Vladmir Agafonkin's (@mourner) excellent suncalc.js library.  
+[Vladmir Agafonkin](agafonkin.com/en)'s ([@mourner](https://github.com/mourner) excellent SunCalc.js library.  
 
 ## Installation
 
