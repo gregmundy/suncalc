@@ -7,15 +7,17 @@ module Suncalc
     J1970 = 2440588
     J2000 = 2451545
     E = RAD * 23.4397
+    J0 = 0.0009
 
     # Date/time constants and conversions
     
     def self.to_julian(date)
-        date.to_time.to_i / DAY_MS - 0.5 + J1970
+        @time = date.to_f * 1000
+        @time / DAY_MS - 0.5 + J1970
     end
 
     def self.from_julian(j)
-
+        
     end
 
     def self.to_days(date)
@@ -51,7 +53,7 @@ module Suncalc
     end
 
     def self.ecliptic_longitude(m)
-        c = RAD * (1.9148 * Math::sin(m) + 0.02 + Math::sin(2 * m) + 0.0003 * Math::sin(3 * m))
+        c = RAD * (1.9148 * Math::sin(m) + 0.02 * Math::sin(2 * m) + 0.0003 * Math::sin(3 * m))
         p = RAD * 102.9372
 
         m + c + p + Math::PI
@@ -81,16 +83,31 @@ module Suncalc
         }
     end
 
+    # Sun times configuration (angle, morning name, evening name)
+    times = [
+        [-0.833, 'sunrise', 'sunset'],
+        [-0.3, 'sunrise_end', 'sunset_start'],
+        [-6, 'dawn', 'dusk'],
+        [-12, 'nautical_dawn', 'nautical_dusk'],
+        [-18, 'night_end', 'night'],
+        [6, 'golden_hour_end', 'golden_hour']
+    ]
+
     def self.add_time(angle, rise_name, set_name)
+        times << [angle, rise_name, set_name]
     end
 
+    # Calculations for sun times
     def self.julian_cycle(d, lw)
+        (d - J0 - lw / (2 * Math::PI)).round
     end
 
     def self.approx_transit(ht, lw, n)
+        J0 + (ht + lw) / (2 * Math::PI) + n
     end
 
     def self.solar_transit_j(ds, m, l)
+        J2000 + ds + 0.0053 * Math::sin(m) - 0.0069 * Math::sin(2 * l)
     end
 
     def self.hour_angle(h, phi, d)
@@ -102,6 +119,22 @@ module Suncalc
 
     # Calculate sun times for a given date and latitude/longitude
     def self.get_times(date, lat, lng)
+        lw = RAD * -lng
+        phi = RAD * lat
+        
+        d = to_days(date)
+        n = julian_cycle(d, lw)
+        ds = approx_transit(0, lw, n)
+        
+        m = solar_mean_anomaly(ds)
+        l = ecliptic_longitude(m)
+        dec = declination(l, 0)
+
+        jnoon = solar_transit_j(ds, m, l)
+
+        puts 'jnoon = ' + jnoon.to_s
+
+
     end
 
     # Moon calculations
