@@ -9,15 +9,23 @@ module Suncalc
     E = RAD * 23.4397
     J0 = 0.0009
 
+    TIMES = [
+        [-0.833, :sunrise, :sunset],
+        [-0.3, :sunrise_end, :sunset_start],
+        [-6, :dawn, :dusk],
+        [-12, :nautical_dawn, :nautical_dusk],
+        [-18, :night_end, :night],
+        [6, :golden_hour_end, :golden_hour]
+    ]
+
     # Date/time constants and conversions
     
     def self.to_julian(date)
-        @time = date.to_f * 1000
-        @time / DAY_MS - 0.5 + J1970
+        @time = (date.to_f * 1000) / DAY_MS - 0.5 + J1970
     end
 
     def self.from_julian(j)
-        
+        @time = Time.at(((j + 0.5 - J1970) * DAY_MS)/1000).utc
     end
 
     def self.to_days(date)
@@ -84,17 +92,9 @@ module Suncalc
     end
 
     # Sun times configuration (angle, morning name, evening name)
-    times = [
-        [-0.833, 'sunrise', 'sunset'],
-        [-0.3, 'sunrise_end', 'sunset_start'],
-        [-6, 'dawn', 'dusk'],
-        [-12, 'nautical_dawn', 'nautical_dusk'],
-        [-18, 'night_end', 'night'],
-        [6, 'golden_hour_end', 'golden_hour']
-    ]
 
     def self.add_time(angle, rise_name, set_name)
-        times << [angle, rise_name, set_name]
+        TIMES << [angle, rise_name, set_name]
     end
 
     # Calculations for sun times
@@ -111,10 +111,14 @@ module Suncalc
     end
 
     def self.hour_angle(h, phi, d)
+        Math::acos((Math::sin(h) - Math::sin(phi) * Math::sin(d)) / (Math::cos(phi) * Math::cos(d)))
     end
 
     # Returns set time for the given sun altitude
     def self.get_set_j(h, lw, phi, dec, n, m, l)
+        w = hour_angle(h, phi, dec)
+        a = approx_transit(w, lw, n)
+        solar_transit_j(a, m, l)
     end
 
     # Calculate sun times for a given date and latitude/longitude
@@ -132,9 +136,20 @@ module Suncalc
 
         jnoon = solar_transit_j(ds, m, l)
 
-        puts 'jnoon = ' + jnoon.to_s
+        result = {
+            :solar_noon => from_julian(jnoon),
+            :nadir => from_julian(jnoon - 0.5)
+        }
 
+        TIMES.each do |time|
+            jset = get_set_j(time[0] * RAD, lw, phi, dec, n, m, l)
+            jrise = jnoon - (jset - jnoon)
+           
+            result[time[1]] = from_julian(jrise)
+            result[time[2]] = from_julian(jset)
+        end
 
+        result
     end
 
     # Moon calculations

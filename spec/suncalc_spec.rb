@@ -8,10 +8,9 @@ describe Suncalc do
 
     it "can return sun phases for the given date and location" do
         @times = Suncalc.get_times(DATE, LAT, LNG)
-        
+
         TEST_TIMES.each do |k,v|
-            puts(v)
-            expect(@times[k]).to eq(v)
+            expect(@times[k].to_s).to eq(v.to_s)
         end
     end
 

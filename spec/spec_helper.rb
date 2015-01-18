@@ -25,3 +25,14 @@ def near(val1, val2, margin)
     @compare = margin.nil? ? 0.000000000000001 : margin
     (val1 - val2).abs < @compare
 end
+
+def compare_time_string(expected, actual)
+    expected.day.to_i == actual.day.to_i \
+        && expected.month.to_i == actual.month.to_i \
+        && expected.year.to_i == actual.year.to_i \
+        && expected.hour.to_i == actual.hour.to_i \
+        && expected.min.to_i == actual.min.to_i \
+        && expected.sec.to_i == actual.sec.to_i
+end
+
+
