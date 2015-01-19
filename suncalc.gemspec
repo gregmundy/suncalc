@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Ruby port of Vladimir Agafonkin's excellent suncalc.js library.}
   spec.description   = %q{A Ruby library for calculating sun/moon positions and phases.}
   spec.homepage      = "https://bitbucket.org/greg_mundy/suncalc.git"
-  spec.license       = "BSD"
+  spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
