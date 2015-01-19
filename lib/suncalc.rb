@@ -154,9 +154,41 @@ module Suncalc
 
     # Moon calculations
     def self.moon_coords(d)
+        el = RAD * (218.316 + 13.176396 * d)
+        m = RAD * (134.963 + 13.064993 * d)
+        f = RAD * (93.272 + 13.229350 * d)
+
+        l = el + RAD * 6.289 * Math::sin(m)
+        b = RAD * 5.128 * Math::sin(f)
+        dt = 385001 - 20905 * Math::cos(m)
+        
+
+        result = {
+            :ra => right_ascension(l, b),
+            :dec => declination(l, b),
+            :dist => dt
+        }
+
+        result
     end
 
     def self.get_moon_position(date, lat, lng)
+        lw = RAD * -lng
+        phi = RAD * lat
+        d = to_days(date)
+
+        c = moon_coords(d)
+        th = sidereal_time(d, lw) - c[:ra]
+        h = altitude(th, phi, c[:dec])
+        h = h + RAD * 0.017 / Math::tan(h + RAD * 10.26 / (h + RAD * 5.10))
+        
+        result = {
+            :azimuth => azimuth(th, phi, c[:dec]),
+            :altitude => h,
+            :distance => c[:dist]
+        }
+
+        result
     end
 
     # Calculations for illumination parameters of the moon
@@ -167,5 +199,8 @@ module Suncalc
     end
 
     def get_moon_times(date, lat, lng)
+        # t = Time.utc(date.year.to_i, date.month.to_i, date.day.to_i)
+        # hc = 0.133 * RAD
+        # h0 = Suncalc.get_moon_position(t, lat, lng).altitude - hc
     end
 end
