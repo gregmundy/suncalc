@@ -21,6 +21,9 @@ TEST_TIMES = {
     :golden_hour => Time.utc(2013,03,05,15,02,52)
 }
 
+MOON_RISE = Time.utc(2013,03,04,23,57,55)
+MOON_SET = Time.utc(2013, 03, 05,8,41,31) 
+
 def near(val1, val2, margin)
     @compare = margin.nil? ? 0.000000000000001 : margin
     (val1 - val2).abs < @compare

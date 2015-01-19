@@ -5,7 +5,7 @@ require 'suncalc/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "suncalc"
-  spec.version       = Suncalc::VERSION
+  spec.version       = SunCalc::VERSION
   spec.authors       = ["Greg Mundy"]
   spec.email         = ["gregmundy@gmail.com"]
   spec.summary       = %q{Ruby port of Vladimir Agafonkin's excellent suncalc.js library.}

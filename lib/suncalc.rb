@@ -1,6 +1,6 @@
 require "suncalc/version"
 
-module Suncalc
+module SunCalc
     # Shortcuts for easier to read equations
     RAD = Math::PI / 180
     DAY_MS = 1000 * 60 * 60 * 24
@@ -181,6 +181,7 @@ module Suncalc
         c = moon_coords(d)
         th = sidereal_time(d, lw) - c[:ra]
         h = altitude(th, phi, c[:dec])
+        
         h = h + RAD * 0.017 / Math::tan(h + RAD * 10.26 / (h + RAD * 5.10))
         
         result = {
@@ -211,12 +212,88 @@ module Suncalc
         result
     end
 
-    def hours_later(date, h)
+    def self.hours_later(date, h)
+        Time.at(date.to_f + (h * (DAY_MS/1000)) / 24).utc 
     end
 
-    def get_moon_times(date, lat, lng)
-        # t = Time.utc(date.year.to_i, date.month.to_i, date.day.to_i)
-        # hc = 0.133 * RAD
-        # h0 = Suncalc.get_moon_position(t, lat, lng).altitude - hc
+    def self.get_moon_times(date, lat, lng)
+        t = Time.new(date.year.to_i, date.month.to_i, date.day.to_i,0,0,0,0).utc
+        hc = 0.133 * RAD
+        h0 = get_moon_position(t, lat, lng)[:altitude] - hc
+        
+        rise = false
+        set = false
+        h1 = 0
+        h2 = 0
+        a = 0
+        b = 0
+        xe = 0
+        ye = 0
+        d = 0
+        roots = 0
+        x1 = 0
+        x2 = 0
+        dx = 0
+
+        (1..24).step(2) do |i|
+            h1 = get_moon_position(hours_later(t, i), lat, lng)[:altitude] - hc
+            h2 = get_moon_position(hours_later(t, i + 1), lat, lng)[:altitude] - hc 
+
+            a = (h0 + h2) / 2 - h1
+            b = (h2 - h0) / 2
+            xe = -b / (2 * a)
+            ye = (a * xe + b) * xe + h1
+            d = b * b - 4 * a * h1
+            roots = 0
+
+            if d >= 0
+                dx = Math::sqrt(d) / (a.abs * 2)
+
+                x1 = xe - dx
+                x2 = xe + dx
+
+                if x1.abs <= 1 
+                    roots += 1
+                end
+                
+                if x2.abs <= 1
+                    roots += 1
+                end
+
+                if x1 < -1
+                    x1 = x2
+                end
+            end
+
+            if roots == 1
+                if h0 < 0
+                    rise = i + x1
+                else
+                    set = i + x1
+                end
+            elsif roots == 2
+                rise = i + (ye < 0 ? x2 : x1)
+                set = i + (ye < 0 ? x1 : x2)
+            end
+            
+            break if rise and set
+
+            h0 = h2
+        end
+
+        result = {}
+        if rise
+            result[:rise] = hours_later(t, rise)
+        end
+        
+        if set
+            result[:set] = hours_later(t, set)
+        end
+
+        if not rise and not set
+            result[ye > 0 ? :alwaysUp : :alwaysDown] = true
+        end
+
+        result
     end
 end
