@@ -8,6 +8,7 @@ module Suncalc
     J2000 = 2451545
     E = RAD * 23.4397
     J0 = 0.0009
+    SDIST = 149598000
 
     TIMES = [
         [-0.833, :sunrise, :sunset],
@@ -192,7 +193,22 @@ module Suncalc
     end
 
     # Calculations for illumination parameters of the moon
-    def get_moon_illumination(dat)
+    def self.get_moon_illumination(date)
+        d = to_days(date)
+        s = sun_coords(d)
+        m = moon_coords(d)
+
+        phi = Math::acos(Math::sin(s[:dec]) * Math::sin(m[:dec]) + Math::cos(s[:dec]) * Math::cos(m[:dec]) * Math::cos(s[:ra] - m[:ra]))
+        inc = Math::atan2(SDIST * Math::sin(phi), m[:dist] - SDIST * Math::cos(phi))
+        angle = Math::atan2(Math::cos(s[:dec]) * Math::sin(s[:ra] - m[:ra]), Math::sin(s[:dec]) * Math::cos(m[:dec]) - Math::cos(s[:dec]) * Math::sin(m[:dec]) * Math::cos(s[:ra] - m[:ra]))
+
+        result = {
+            :fraction => (1 + Math::cos(inc)) / 2,
+            :phase => 0.5 + 0.5 * inc * (angle < 0 ? -1 : 1) / Math::PI,
+            :angle => angle
+        }
+
+        result
     end
 
     def hours_later(date, h)

@@ -23,7 +23,10 @@ describe Suncalc do
     end
 
     it "can return fraction and angle of moon's illuminated limb and phase" do
-    
+        @moon_illum = Suncalc.get_moon_illumination(DATE)
+        expect(near(@moon_illum[:fraction], 0.4848068202456373, nil)).to be true
+        expect(near(@moon_illum[:phase], 0.7548368838538762, nil)).to be true
+        expect(near(@moon_illum[:angle], 1.6732942678578346, nil)).to be true
     end
 
     it "can return moon rise and set times" do
