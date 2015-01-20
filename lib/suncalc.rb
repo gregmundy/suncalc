@@ -9,6 +9,7 @@ module SunCalc
     E = RAD * 23.4397
     J0 = 0.0009
     SDIST = 149598000
+    HC = 0.133 * RAD
 
     TIMES = [
         [-0.833, :sunrise, :sunset],
@@ -22,11 +23,11 @@ module SunCalc
     # Date/time constants and conversions
     
     def self.to_julian(date)
-        @time = (date.to_f * 1000) / DAY_MS - 0.5 + J1970
+        (date.to_f * 1000) / DAY_MS - 0.5 + J1970
     end
 
     def self.from_julian(j)
-        @time = Time.at(((j + 0.5 - J1970) * DAY_MS)/1000).utc
+        Time.at(((j + 0.5 - J1970) * DAY_MS)/1000).utc
     end
 
     def self.to_days(date)
@@ -217,33 +218,23 @@ module SunCalc
     end
 
     def self.get_moon_times(date, lat, lng)
-        t = Time.new(date.year.to_i, date.month.to_i, date.day.to_i,0,0,0,0).utc
-        hc = 0.133 * RAD
-        h0 = get_moon_position(t, lat, lng)[:altitude] - hc
-        
+        t = Time.new(date.year.to_i, date.month.to_i, date.day.to_i).utc
+        h0 = get_moon_position(t, lat, lng)[:altitude] - HC
+
         rise = false
         set = false
-        h1 = 0
-        h2 = 0
-        a = 0
-        b = 0
-        xe = 0
         ye = 0
-        d = 0
-        roots = 0
-        x1 = 0
-        x2 = 0
-        dx = 0
 
         (1..24).step(2) do |i|
-            h1 = get_moon_position(hours_later(t, i), lat, lng)[:altitude] - hc
-            h2 = get_moon_position(hours_later(t, i + 1), lat, lng)[:altitude] - hc 
+            h1 = get_moon_position(hours_later(t, i), lat, lng)[:altitude] - HC
+            h2 = get_moon_position(hours_later(t, i + 1), lat, lng)[:altitude] - HC 
 
             a = (h0 + h2) / 2 - h1
             b = (h2 - h0) / 2
             xe = -b / (2 * a)
             ye = (a * xe + b) * xe + h1
             d = b * b - 4 * a * h1
+            
             roots = 0
 
             if d >= 0
@@ -265,13 +256,13 @@ module SunCalc
                 end
             end
 
-            if roots == 1
+            if roots === 1
                 if h0 < 0
                     rise = i + x1
                 else
                     set = i + x1
                 end
-            elsif roots == 2
+            elsif roots === 2
                 rise = i + (ye < 0 ? x2 : x1)
                 set = i + (ye < 0 ? x1 : x2)
             end
