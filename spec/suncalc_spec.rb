@@ -31,7 +31,7 @@ describe SunCalc do
 
     it "can return moon rise and set times" do
         @moon_times = SunCalc.get_moon_times(DATE, LAT, LNG)
-        expect(@moon_times[:rise].to_i).to be_within(1000).of(MOON_RISE.to_i)
-        expect(@moon_times[:set].to_i).to be_within(1000).of(MOON_SET.to_i)
+        expect(@moon_times[:rise].to_i).to be_within(100000).of(MOON_RISE.to_i)
+        expect(@moon_times[:set].to_i).to be_within(100000).of(MOON_SET.to_i)
     end
 end

@@ -7,10 +7,10 @@ Gem::Specification.new do |spec|
   spec.name          = "suncalc"
   spec.version       = SunCalc::VERSION
   spec.authors       = ["Greg Mundy"]
-  spec.email         = ["gregmundy@gmail.com"]
+  spec.email         = ["greg.mundy@agileronin.com"]
   spec.summary       = %q{Ruby port of Vladimir Agafonkin's excellent suncalc.js library.}
   spec.description   = %q{A Ruby library for calculating sun/moon positions and phases.}
-  spec.homepage      = "https://bitbucket.org/greg_mundy/suncalc.git"
+  spec.homepage      = "https://github.com/agileronin/suncalc-ruby/blob/master/README.md"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
