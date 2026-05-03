@@ -26,6 +26,48 @@ describe SunCalc do
         expect(elevated[:sunset].utc.strftime("%H:%M:%S")).to eq("15:56:46")
     end
 
+    it "returns nil for events that don't occur on a polar day, with :always_up flag" do
+        # Tromsø, Norway (69.65°N) on summer solstice — the sun stays above
+        # the horizon all day. Previously this raised Math::DomainError.
+        result = SunCalc.get_times(Time.utc(2026, 6, 21), 69.6492, 18.9553)
+
+        expect(result[:sunrise]).to be_nil
+        expect(result[:sunset]).to be_nil
+        expect(result[:dawn]).to be_nil
+        expect(result[:dusk]).to be_nil
+        expect(result[:always_up]).to be true
+        expect(result[:always_down]).to be_nil
+
+        # Solar noon and nadir don't depend on hour_angle, so they still work.
+        expect(result[:solar_noon]).to be_a(Time)
+        expect(result[:nadir]).to be_a(Time)
+    end
+
+    it "returns nil for events that don't occur on a polar night, with :always_down flag" do
+        # Tromsø on winter solstice — the sun never rises.
+        result = SunCalc.get_times(Time.utc(2026, 12, 21), 69.6492, 18.9553)
+
+        expect(result[:sunrise]).to be_nil
+        expect(result[:sunset]).to be_nil
+        expect(result[:always_down]).to be true
+        expect(result[:always_up]).to be_nil
+
+        expect(result[:solar_noon]).to be_a(Time)
+        expect(result[:nadir]).to be_a(Time)
+    end
+
+    it "still returns events that do occur even when others don't (partial polar)" do
+        # On a polar day, golden_hour boundaries (sun at +6°) may still occur
+        # even though sunrise/sunset (sun at -0.833°) don't. The result hash
+        # should mix Time values and nil values per event.
+        result = SunCalc.get_times(Time.utc(2026, 6, 21), 69.6492, 18.9553)
+
+        expect(result[:sunrise]).to be_nil
+        # golden_hour bounds should still compute since the sun does cross +6°
+        expect(result[:golden_hour]).to be_a(Time)
+        expect(result[:golden_hour_end]).to be_a(Time)
+    end
+
     it "can return moon position data given time and location" do
         @moon_pos = SunCalc.get_moon_position(DATE, LAT, LNG)
         expect(near(@moon_pos[:azimuth], -0.9783999522438226, nil)).to be true

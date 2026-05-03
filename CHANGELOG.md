@@ -4,6 +4,29 @@ All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-05-03
+
+### Fixed
+
+- **`get_times` no longer raises `Math::DomainError` for polar latitudes.**
+  Previously, calling `get_times` for any location and date where the sun
+  did not cross a given altitude (polar day, polar night, or any partial
+  case) would crash the entire call with an unhandled `Math::DomainError`
+  from `Math.acos`. This bug has been present since the original 2015
+  port. Events that don't occur are now reported as `nil` in the result
+  hash, mirroring the sparse-result pattern already used by
+  `get_moon_times`.
+
+### Added
+
+- **`:always_up` and `:always_down` flag keys** on the `get_times` result.
+  When neither sunrise nor sunset occurs, the result hash includes either
+  `:always_up => true` (midnight sun — sun above horizon all day) or
+  `:always_down => true` (polar night — sun below horizon all day). The
+  flag is determined from the sun's altitude at solar noon. Other events
+  in the same call (`:solar_noon`, `:nadir`, and twilight boundaries that
+  do still occur) are returned normally alongside the flag.
+
 ## [1.1.1] — 2026-05-03
 
 No functional changes to the library. This release validates the GitHub
@@ -77,6 +100,7 @@ correctness bugs that have been present since the original release.
 - Initial release. Ruby port of suncalc.js covering sun position, sun times,
   moon position, moon illumination, and moon rise/set times.
 
+[1.2.0]: https://github.com/gregmundy/suncalc/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/gregmundy/suncalc/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/gregmundy/suncalc/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/gregmundy/suncalc/compare/v1.0.0...v1.0.1

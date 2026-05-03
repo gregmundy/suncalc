@@ -76,6 +76,22 @@ The result hash contains the following keys:
 | `nautical_dawn`    | Nautical dawn (morning nautical twilight starts).      |
 | `dawn`             | Morning civil twilight starts.                         |
 
+At polar latitudes events that do not occur on the requested date are
+returned as `nil`. When both `:sunrise` and `:sunset` are `nil` the result
+also contains either `:always_up => true` (midnight sun) or
+`:always_down => true` (polar night), so callers can disambiguate without
+recomputing the sun's altitude. Other events in the same call are still
+returned normally — for example, on a midsummer day at 70°N you will get a
+real `:solar_noon` Time and real `:golden_hour` boundaries alongside
+`nil` for `:sunrise` and `:sunset`.
+
+```ruby
+times = SunCalc.get_times(Time.utc(2026, 6, 21), 69.6492, 18.9553)
+times[:sunrise]   # => nil
+times[:always_up] # => true
+times[:solar_noon] # => 2026-06-21 11:13:08 UTC
+```
+
 #### Observer elevation
 
 `get_times` accepts an optional fourth argument — the observer's height above

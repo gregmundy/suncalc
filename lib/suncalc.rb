@@ -160,11 +160,29 @@ module SunCalc
 
         TIMES.each do |time|
             h0 = (time[0] + dh) * RAD
-            jset = get_set_j(h0, lw, phi, dec, n, m, l)
-            jrise = jnoon - (jset - jnoon)
+            begin
+                jset = get_set_j(h0, lw, phi, dec, n, m, l)
+                jrise = jnoon - (jset - jnoon)
+                result[time[1]] = from_julian(jrise)
+                result[time[2]] = from_julian(jset)
+            rescue Math::DomainError
+                # The sun never crosses this altitude on this date — polar
+                # day or polar night for this particular event.
+                result[time[1]] = nil
+                result[time[2]] = nil
+            end
+        end
 
-            result[time[1]] = from_julian(jrise)
-            result[time[2]] = from_julian(jset)
+        # If sunrise/sunset don't occur, decide whether the sun was above the
+        # horizon all day (always_up) or below it all day (always_down) by
+        # looking at the altitude at solar noon (where hour angle = 0).
+        if result[:sunrise].nil? && result[:sunset].nil?
+            noon_altitude = altitude(0, phi, dec)
+            if noon_altitude > 0
+                result[:always_up] = true
+            else
+                result[:always_down] = true
+            end
         end
 
         result
