@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] — 2026-05-03
+
+No functional changes to the library. This release validates the GitHub
+Actions release pipeline end-to-end after a fix to the `.gem` artifact
+upload step in 1.1.0's release run.
+
+### Changed
+
+- Internal: release workflow now builds the gem locally before attaching
+  it to the GitHub Release page; the `rubygems/release-gem` action does
+  not leave the artifact in the working directory after publishing.
+- Bumped `actions/checkout` to v6 in the CI and Release workflows to
+  clear the upcoming Node 20 deprecation.
+
 ## [1.1.0] — 2026-05-03
 
 This release brings the Ruby port back in line with upstream
@@ -63,6 +77,7 @@ correctness bugs that have been present since the original release.
 - Initial release. Ruby port of suncalc.js covering sun position, sun times,
   moon position, moon illumination, and moon rise/set times.
 
+[1.1.1]: https://github.com/gregmundy/suncalc/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/gregmundy/suncalc/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/gregmundy/suncalc/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/gregmundy/suncalc/releases/tag/v1.0.0
