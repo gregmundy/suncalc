@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: rubygems
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0   # full history + tags so we can validate and push tags
 
