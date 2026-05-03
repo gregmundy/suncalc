@@ -96,12 +96,17 @@ jobs:
       - name: Publish gem to RubyGems
         uses: rubygems/release-gem@v1
 
+      - name: Build gem (for GitHub Release attachment)
+        run: gem build suncalc.gemspec
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           tag="${{ steps.version.outputs.tag }}"
+          version="${{ steps.version.outputs.version }}"
           gh release create "$tag" \
             --title "$tag" \
             --notes-file release_notes.md \
-            ./*.gem
+            "./suncalc-${version}.gem"
