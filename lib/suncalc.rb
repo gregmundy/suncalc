@@ -57,6 +57,13 @@ module SunCalc
         RAD * (280.16 + 360.9856235 * d) - lw
     end
 
+    # Atmospheric refraction correction (Meeus formula 16.4). Input/output in
+    # radians. Clamps h to >= 0 to avoid the div/0 singularity at h ≈ -0.0890.
+    def self.astro_refraction(h)
+        h = 0 if h < 0
+        0.0002967 / Math.tan(h + 0.00312536 / (h + 0.08901179))
+    end
+
     # General sun calculations
     def self.solar_mean_anomaly(d)
         RAD * (357.5291 + 0.98560028 * d)
@@ -116,6 +123,12 @@ module SunCalc
         Math::acos((Math::sin(h) - Math::sin(phi) * Math::sin(d)) / (Math::cos(phi) * Math::cos(d)))
     end
 
+    # Apparent angle of the horizon below the observer, in degrees, from a given
+    # observer height in meters. Used to correct sun rise/set times for elevation.
+    def self.observer_angle(height)
+        -2.076 * Math.sqrt(height) / 60
+    end
+
     # Returns set time for the given sun altitude
     def self.get_set_j(h, lw, phi, dec, n, m, l)
         w = hour_angle(h, phi, dec)
@@ -123,15 +136,17 @@ module SunCalc
         solar_transit_j(a, m, l)
     end
 
-    # Calculate sun times for a given date and latitude/longitude
-    def self.get_times(date, lat, lng)
+    # Calculate sun times for a given date and latitude/longitude. Optional
+    # height (meters above the horizon) corrects for observer elevation.
+    def self.get_times(date, lat, lng, height = 0)
         lw = RAD * -lng
         phi = RAD * lat
-        
+        dh = observer_angle(height)
+
         d = to_days(date)
         n = julian_cycle(d, lw)
         ds = approx_transit(0, lw, n)
-        
+
         m = solar_mean_anomaly(ds)
         l = ecliptic_longitude(m)
         dec = declination(l, 0)
@@ -144,9 +159,10 @@ module SunCalc
         }
 
         TIMES.each do |time|
-            jset = get_set_j(time[0] * RAD, lw, phi, dec, n, m, l)
+            h0 = (time[0] + dh) * RAD
+            jset = get_set_j(h0, lw, phi, dec, n, m, l)
             jrise = jnoon - (jset - jnoon)
-           
+
             result[time[1]] = from_julian(jrise)
             result[time[2]] = from_julian(jset)
         end
@@ -182,20 +198,19 @@ module SunCalc
         c = moon_coords(d)
         th = sidereal_time(d, lw) - c[:ra]
         h = altitude(th, phi, c[:dec])
-        
-        h = h + RAD * 0.017 / Math::tan(h + RAD * 10.26 / (h + RAD * 5.10))
-        
-        result = {
-            :azimuth => azimuth(th, phi, c[:dec]),
-            :altitude => h,
-            :distance => c[:dist]
-        }
+        # Meeus formula 14.1
+        pa = Math.atan2(Math.sin(th), Math.tan(phi) * Math.cos(c[:dec]) - Math.sin(c[:dec]) * Math.cos(th))
 
-        result
+        {
+            :azimuth => azimuth(th, phi, c[:dec]),
+            :altitude => h + astro_refraction(h),
+            :distance => c[:dist],
+            :parallactic_angle => pa
+        }
     end
 
     # Calculations for illumination parameters of the moon
-    def self.get_moon_illumination(date)
+    def self.get_moon_illumination(date = Time.now)
         d = to_days(date)
         s = sun_coords(d)
         m = moon_coords(d)
@@ -217,8 +232,12 @@ module SunCalc
         Time.at(date.to_f + (h * (DAY_MS/1000)) / 24).utc 
     end
 
-    def self.get_moon_times(date, lat, lng)
-        t = Time.new(date.year.to_i, date.month.to_i, date.day.to_i).utc
+    def self.get_moon_times(date, lat, lng, in_utc = true)
+        t = if in_utc
+            Time.utc(date.year, date.month, date.day)
+        else
+            Time.local(date.year, date.month, date.day)
+        end
         h0 = get_moon_position(t, lat, lng)[:altitude] - HC
 
         rise = false

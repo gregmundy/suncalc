@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to push the tag and create the GitHub Release
+  id-token: write   # needed for RubyGems trusted publishing (OIDC)
+
+jobs:
+  release:
+    name: Build, test, tag, and publish
+    runs-on: ubuntu-latest
+    environment: rubygems
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history + tags so we can validate and push tags
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      - name: Determine version
+        id: version
+        run: |
+          set -euo pipefail
+          gem_version=$(ruby -Ilib -rsuncalc/version -e 'puts SunCalc::VERSION')
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            tag_version="${GITHUB_REF_NAME#v}"
+            if [ "$tag_version" != "$gem_version" ]; then
+              echo "::error::Tag v$tag_version does not match SunCalc::VERSION ($gem_version) in lib/suncalc/version.rb"
+              exit 1
+            fi
+            version="$tag_version"
+          else
+            version="$gem_version"
+          fi
+          echo "version=$version"   >> "$GITHUB_OUTPUT"
+          echo "tag=v${version}"    >> "$GITHUB_OUTPUT"
+          echo "Releasing v${version}"
+
+      - name: Verify tag does not already exist
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          tag="${{ steps.version.outputs.tag }}"
+          if git rev-parse --verify --quiet "refs/tags/$tag" >/dev/null; then
+            echo "::error::Tag $tag already exists. Bump SunCalc::VERSION in lib/suncalc/version.rb."
+            exit 1
+          fi
+
+      - name: Verify CHANGELOG entry exists
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          if ! grep -q "^## \[${version}\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [${version}]' section."
+            exit 1
+          fi
+
+      - name: Run rspec
+        run: bundle exec rspec
+
+      - name: Extract changelog notes
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { flag = 1; next }
+            flag && /^## \[/ { exit }
+            flag { print }
+          ' CHANGELOG.md > release_notes.md
+          if [ ! -s release_notes.md ]; then
+            echo "Release $version" > release_notes.md
+          fi
+          echo "----- release notes -----"
+          cat release_notes.md
+          echo "-------------------------"
+
+      - name: Create and push tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          tag="${{ steps.version.outputs.tag }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Release $tag"
+          git push origin "$tag"
+
+      - name: Publish gem to RubyGems
+        uses: rubygems/release-gem@v1
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          gh release create "$tag" \
+            --title "$tag" \
+            --notes-file release_notes.md \
+            ./*.gem
